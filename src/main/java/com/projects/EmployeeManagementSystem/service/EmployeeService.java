@@ -11,6 +11,8 @@ import com.projects.EmployeeManagementSystem.model.Employee;
 import com.projects.EmployeeManagementSystem.model.EmployeeStatus;
 import com.projects.EmployeeManagementSystem.repo.EmployeeRepo;
 import org.mapstruct.factory.Mappers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +25,8 @@ import java.util.List;
 
 @Service
 public class EmployeeService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmployeeService.class);
 
     @Autowired
     EmployeeRepo repo;
@@ -43,18 +47,22 @@ public class EmployeeService {
 
             List<Employee> allEmp = page.getContent();
             List<EmployeeResponseDTO> mapEmp = em.fetchEmployeeMapper(allEmp);
+            logger.info("Fetching user from page nemer: "+pageable.getPageNumber());
             return new ResponseEntity<>(mapEmp, HttpStatus.OK);
 
     }
 
     public ResponseEntity<EmployeeResponseDTO> getEmployeeById(int id){
-        Employee emp = repo.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Employee Id: "+id+" is not found, Please try with a valid Id"));
+        Employee emp = repo.findById(id).orElseThrow(() ->{
+            logger.error("Employee not found with id: "+ id);
+                return new ResourceNotFoundException("Employee Id: "+id+" is not found, Please try with a valid Id");
+        });
         if(emp.isDeleted()==true) {
             throw new EmployeeIsDeletedOrInactiveException("Employee is deleted");
         }
         EmployeeResponseDTO mapEmp = em.fetchSingleEmployee(emp);
 
+        logger.info("User is found with Id: {}", id);
         return new ResponseEntity<>(mapEmp, HttpStatus.OK);
     }
 
@@ -76,17 +84,22 @@ public class EmployeeService {
         emp.setStatus(EmployeeStatus.ACTIVE); /**Already used in Mapper**/
         emp.setDeleted(false); /**Already used in Mapper**/
         emp.setJoiningDate(now);
-        emp.setCreatedAt(now);
-        emp.setUpdatedAt(now);
+        //emp.setCreatedAt(now);  //Audit
+        //emp.setUpdatedAt(now);  //Audit
         Employee savedEmp = repo.save(emp);
         EmployeeResponseDTO response = em.fetchSingleEmployee(savedEmp);
+        logger.info("User is successfully created with Email: {}",requestDTO.getEmail());
         return new ResponseEntity<>(response,HttpStatus.CREATED);
+
     }
 
     public ResponseEntity<?> updateEmployee(EmployeeRequestDTO requestDTO, int id) {
-        Employee emp = repo.findById(id).orElseThrow(()-> new
-                ResourceNotFoundException("Employee Id: "+id+" is not found, Please try with a valid Id"));
+        Employee emp = repo.findById(id).orElseThrow(()-> {
+            logger.error("Employee not found with id: {}", id);
+            return new ResourceNotFoundException("Employee Id: " + id + " is not found, Please try with a valid Id");
+        });
         if(emp.isDeleted() || emp.getStatus()==EmployeeStatus.INACTIVE){
+            logger.error("Employee is deleted or inactive with id: "+ id);
             throw new EmployeeIsDeletedOrInactiveException("Employee is Deleted");
         }
         em.updateEmployeeMapper(requestDTO,emp);
@@ -95,7 +108,7 @@ public class EmployeeService {
 //        if(!requestDTO.getEmail().equals(emp.getEmail()) && requestDTO.getEmail()!=null){
 //            throw new RuntimeException("Email cannot be updated");
 //        }
-        emp.setUpdatedAt(now);
+        //emp.setUpdatedAt(now);
         Employee savedEmp = repo.save(emp);
         EmployeeResponseDTO response = em.fetchSingleEmployee(savedEmp);
         return new ResponseEntity<>(response,HttpStatus.OK);
@@ -112,14 +125,17 @@ public class EmployeeService {
     }
 
     public ResponseEntity<?> deleteEmployee(int id) {
-        Employee emp = repo.findById(id).orElseThrow(() ->
-                new ResourceNotFoundException("Employee Id: "+id+" is not found, Please try with a valid Id"));
+        Employee emp = repo.findById(id).orElseThrow(() ->{
+            logger.error("Employee not found with id: {}", id);
+            return new ResourceNotFoundException("Employee Id: "+id+" is not found, Please try with a valid Id");
+        });
         if(emp.isDeleted()){
             throw new EmployeeIsDeletedOrInactiveException("Employee already deleted");
         }
         emp.setDeleted(true);
         emp.setStatus(EmployeeStatus.INACTIVE);
         repo.save(emp);
+        logger.warn("Soft deleting employee with id: "+id);
         return new ResponseEntity<>(emp.getFirstName()+" is deleted",HttpStatus.OK);
     }
 }
