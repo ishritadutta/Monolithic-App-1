@@ -25,7 +25,7 @@ public class EmployeeRequestDTO {
     @NotNull(message = "This field should not be null")
     private String lastName;
     @Email(message="Email should be in correct format")
-    @ValidEmailDomain(domain = "yahoo.com", message="Valid email domain should be entered")
+    @ValidEmailDomain(domain = "gmail.com", message="Valid email domain should be entered")
     private String email;
     @Pattern(regexp = "^[6-9][0-9]{9}$",message = "Must be a valid 10-digit mobile number")
     @ValidPhoneNumber(message = "Valid phone number should be entered")

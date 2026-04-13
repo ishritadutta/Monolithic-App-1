@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +16,7 @@ import java.util.Date;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Employee {
 
     @Id
@@ -20,7 +24,7 @@ public class Employee {
     private int id;
     private String firstName;
     private String lastName;
-   //@Column(unique = true)
+    //@Column(unique = true)
     //@Column(updatable = false)
     private String email;
     private String phone;
@@ -30,7 +34,10 @@ public class Employee {
     private int age;
     private String city;
     private boolean isDeleted;
+    @CreatedDate
+    @Column(updatable = false)
     private LocalDateTime createdAt;
+    @LastModifiedDate
     private LocalDateTime updatedAt;
     @Enumerated(EnumType.STRING)
     private EmployeeGender gender;
